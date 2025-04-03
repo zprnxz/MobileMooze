@@ -1,534 +1,999 @@
-getgenv().Knives = {
-    ['Aimbot'] = {
-        ['Prediction'] = {
-            ['Amount'] = 0.1417463,
-            ['Auto Prediction'] = false
-        },
-        ['Camera'] = {
-            ['Smoothing'] = 2.1
-        },
-        ['Target Part'] = "UpperTorso",
-        ['Jump Offset'] = -1.5,
-        ['Auto Air'] = {
-            ['Enabled'] = true,
-            ['Delay'] = {
-                ['Enabled'] = false,
-                ['Delay Amount'] = 1.5
-            }
-        },
-        ['Notify'] = true
+getgenv().Obstruct = {
+    Startup = {
+        Intro = true,
     },
-    ['Macro'] = {
-        ['Enabled'] = true
+    Aimbot = {
+        Enabled = true,
+        HitPart = "Head",
+        Prediction = 0.146274,
+        Smoothness = 0.828,
     },
-    ['Textures'] = {
-        ['Enabled'] = true,
-        ['Config'] = {
-            ['Color'] = Color3.fromRGB(50,50,50),
-            ['Material'] = Enum.Material.Sand,
-            ['Ignore Players'] = true
+    AimbotOffset = {
+        JumpOffset = 12,
+        FallOffset = 4,
+    },
+    Safety = {
+        AntiGroundShots = true,
+        AntiAimViewer = true,
+    },
+    SilentAim = {
+        Enabled = true,
+        Prediction = 0.1431764,
+        HitPart = "Head",
+        Type = "Target", -- (Options: "Fov" or "Target" Mode)
+        NearestPoint = true,
+        NearestPointType = "Full",
+        Fov = {
+          Visible = true,
+          Transparency = 0,
+          Thickness = 1,
+          Color = Color3.fromRGB(111, 111, 11),
+          Radius = 150,
+        },
+    },
+    Resolver = {
+        Enabled = true,
+        Type = "Delta", -- (Options: "Recalculate", "Delta")
+        Keybind = "G",
+    },
+    Macro = {
+        Enabled = false,
+        Keybind = "x",
+        Speed = 0.0200,
+        Type = "Third", -- "First", "Third"
+    },
+    Spin = {
+        Enabled = true,
+        SpinSpeed = 4900,
+        Degrees = 360,
+        Keybind = "V",
+    },
+    Misc = {
+        KeyTool = "none",
+    },
+    Keybinds = {
+        AimbotToggle = "Q", 
+    },
+    Checks = {
+        Knocked = true,
+    },
+    SkyBox = {
+        Enabled = true,
+        SkyBoxTexture = "White Galaxy", -- Options: Default, Vaporwave, Redshift, Desert, DaBaby, Minecraft, SpongeBob, Skibidi, Blaze, Pussy Cat, Among Us, Space Wave, Space Wave2, Turquoise Wave, Dark Night, Bright Pink, White Galaxy (Credits to Tsol)  
+    },
+    Cframe = {
+        Options = {
+            Enabled = true,
+            DefaultSpeed = 100,
+            Keybinds = {
+                ToggleMovement = "J",
+            },
+        },
+    },
+    Triggerbot = {
+        Settings = {
+            enabled = false,
+            Keybind = "T",
+            Whitelist = { "Revolver", "Double Barrel", "SMG" },
+            Delay = 0.1,
+        }
+    },
+    Textures = {
+        Enabled = true,  
+        Ignore_Players = true,  
+        Config = {
+            Material = Enum.Material.SmoothPlastic,
+            Color = Color3.fromRGB(255, 255, 255),
+            Transparency = 0,  
         }
     }
 }
 
-if (not getgenv().Knives.Loaded) then
+-- // Services 
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
 
-    local Arguments = loadstring(game:HttpGet("https://raw.githubusercontent.com/idontcodelol12n/arguments/refs/heads/main/args",true))() -- this if it get delated
---[[
-    return {
-        ["UpdateMousePosI"] = {
-            2788229376,    -- Da Hood
-            7213786345,    -- Da Hood VC
-            16033173781,   -- Da Hood Macro
-        },
+-- // Aimbots Variable
+local Target = nil
+local AimbotEnabled = false
+
+-- // TargerSwitch Variable
+local LastSwitchTime = 0
+
+local GameReference = cloneref(Game)
+
+if not GameReference:IsLoaded() then GameReference.Loaded:Wait() end
+
+--// Services \\--
+local Workspace = GameReference:GetService("Workspace")
+
+--// LocalPlayer \\--
+local LocalCharacter = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local LocalHumanoid = LocalCharacter:FindFirstChildOfClass("Humanoid") or LocalCharacter:FindFirstChildWhichIsA("Humanoid") or LocalCharacter:WaitForChild("Humanoid")
+local LocalRootPart = LocalHumanoid.RootPart or LocalCharacter:WaitForChild("HumanoidRootPart")
+local LocalGui = LocalPlayer:FindFirstChildOfClass("PlayerGui") or LocalPlayer:WaitForChild("PlayerGui")
+local Camera = Workspace:FindFirstChildOfClass("Camera") or Workspace:WaitForChild("Camera")
+
+--// Variables \\--
+local LastActivationTime = tick()
+
+--// Circle \\--
+local Circle = Drawing.new("Circle")
+Circle.Visible = false
+Circle.Transparency = 1
+Circle.Color = Color3.fromRGB(255, 255, 255)
+Circle.Filled = true
+Circle.Radius = 100
+Circle.NumSides = Circle.Radius * 100
+Circle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+
+--// Functions \\--
+
+--// LocalPlayer | CharacterAdded \\--
+LocalPlayer.CharacterAdded:Connect(function(Character)
+    LocalCharacter = Character
+    LocalHumanoid = LocalCharacter:FindFirstChildOfClass("Humanoid") or LocalCharacter:FindFirstChildWhichIsA("Humanoid") or LocalCharacter:WaitForChild("Humanoid")
+    LocalRootPart = LocalHumanoid.RootPart or LocalCharacter:WaitForChild("HumanoidRootPart")
+end)
+
+--// Checks If A Player Is Behind A Wall \\--
+local function WallCheck(Part)
+    local CameraPosition = Camera.CFrame.Position
+    local PartPosition = Part.CFrame.Position
+    local Direction = (PartPosition - CameraPosition).Unit
+    local Distance = (PartPosition - CameraPosition).Magnitude
     
-        ["UpdateMousePos"] = {
-            17897702920,   -- Og Da Hood
-            11143225577,   -- 1v1 Hood Aim Trainer
-            14975320521,   -- Ar Hood
-            17200018150,   -- Hood Of AR
-            17809101348,   -- New Hood
-            16469595315,   -- Del Hood Aim
-            17344804827,   -- Yeno Hood
-            15644861772,   -- Flame Hood
-            16435867341,   -- Mad Hood
-            12927359803,   -- Dah Aim Trainer
-            12867571492,   -- Katana Hood
-            11867820563,   -- Dae Hood
-            9825515356,    -- Hood Customs
-            17109142105,   -- Da Battles
-            14412601883,   -- Hood Bank
-            14412436145,   -- Da Uphill
-            14413712255,   -- Hood Aim
-            15186202290,   -- Da Strike
-            14487637618,   -- Da Hood Bot Aim Trainer
-            5602055394,    -- Hood Modded
-            7951883376,    -- Hood Modded VC
-            9183932460,    -- Untitled Hood
-        }
-    }
-    --]]
-
-    local notificationLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/laagginq/ui-libraries/main/xaxas-notification/src.lua"))()
-    local notifications = notificationLibrary.new({            
-        NotificationLifetime = 3, 
-        NotificationPosition = "TopLeft",
-        TextFont = Enum.Font.Code,
-        TextColor = Color3.fromRGB(255, 255, 255),
-        TextSize = 15,
-        TextStrokeTransparency = 0, 
-        TextStrokeColor = Color3.fromRGB(0, 0, 0)
-    })
-
-    notifications:BuildNotificationUI()
-
-    Script = {}
-    Script.Functions = {}
-
-    local ReplicatedStorage = game:GetService("ReplicatedStorage")
-    local RunService = game:GetService("RunService")
-    local UserInputService = game:GetService("UserInputService")
-    local TweenService = game:GetService("TweenService")
-    local CoreGui = game:GetService("CoreGui")
-    local Players = game:GetService("Players")
-    local Client = Players.LocalPlayer
-    local Camera = workspace.CurrentCamera
-
-    local PlayerData = {}
-
-    local KnivesGui = Instance.new("ScreenGui")
-    local LockButton = Instance.new("ImageButton")
-    local MacroButton = Instance.new("ImageButton")
-
-    KnivesGui.Name = "Mooze (CoreGui)"
-    KnivesGui.Parent = CoreGui
-    KnivesGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    KnivesGui.ResetOnSpawn = false
-
-    LockButton.Parent = MoozeGui
-    LockButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    LockButton.BackgroundTransparency = 1.000
-    LockButton.Position = UDim2.new(0.7, 0, 0.75, 0)
-    LockButton.Size = UDim2.new(0, 90, 0, 90)
-    LockButton.Image = "rbxasset://textures/ui/mouseLock_off@2x.png"
-
-    MacroButton.Parent = MoozeGui
-    MacroButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    MacroButton.BackgroundTransparency = 1.000
-    MacroButton.Position = UDim2.new(0.85, 0, 0.75, 0)
-    MacroButton.Size = UDim2.new(0, 90, 0, 90)
-    MacroButton.Image = "rbxassetid://113276332333710"
-    MacroButton.Visible = getgenv().Knives['Macro']['Enabled']
-
-    Script.Functions.MakeDraggable = function(topbarobject, object)
-        local Dragging = nil
-        local DragInput = nil
-        local DragStart = nil
-        local StartPosition = nil
+    local RayParams = RaycastParams.new()
+    RayParams.FilterDescendantsInstances = {LocalCharacter, Camera}
+    RayParams.FilterType = Enum.RaycastFilterType.Blacklist
+    RayParams.IgnoreWater = true
+    
+    local Result = Workspace:Raycast(CameraPosition, Direction * Distance, RayParams)
+    
+    if Result then
+        local HitPart = Result.Instance
         
-        local function Update(input)
-            local Delta = input.Position - DragStart
-            local pos = UDim2.new(StartPosition.X.Scale, StartPosition.X.Offset + Delta.X, StartPosition.Y.Scale, StartPosition.Y.Offset + Delta.Y)
-            local Tween = TweenService:Create(object, TweenInfo.new(0.15), {Position = pos})
-            Tween:Play()
+        local HitModel = HitPart and HitPart:FindFirstAncestorOfClass("Model")
+        local HitPlayer = HitModel and Players:GetPlayerFromCharacter(HitModel)
+        
+        if HitPlayer then
+            return false
+        elseif not HitPart or not HitModel or not HitPlayer then
+            return true
         end
-        
-        if topbarobject then
-            topbarobject.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    Dragging = true
-                    DragStart = input.Position
-                    StartPosition = object.Position
+    end
+    
+    return false
+end
+
+--// Gets Aim Cursor Frame \\--
+local function GetAimCursor()
+    if LocalGui then
+        local MainGui = LocalGui:FindFirstChild("MainScreenGui") or LocalGui:FindFirstChild("Main Screen") or LocalGui:FindFirstChild("MainScreen") or LocalGui:FindFirstChild("MainGui") or LocalGui:FindFirstChild("gui") or LocalGui:FindFirstChild("ScreenGui")
+        if MainGui then
+            local AimCursor = MainGui:FindFirstChild("Aim") or MainGui:FindFirstChild("AimUI")
+            if AimCursor then
+                return AimCursor
+            end
+        end
+    end
+    return nil
+end
+
+--// Get Player In Circle \\--
+local function GetPlayerInCircle()
+    local Distance = math.huge
+    local PlayerInCircle = nil
+    
+    for Index, Player in ipairs(Players:GetPlayers()) do
+        if Player.UserId ~= LocalPlayer.UserId and Player.Character then
+            for IIndex, Child in ipairs(Player.Character:GetChildren()) do
+                if (Child:IsA("BasePart") or Child:IsA("MeshPart") or Child:IsA("Part")) and Child.Transparency < 1 then
+                    local ScreenPosition, OnScreen = Camera:WorldToScreenPoint(Child.Position)
+                    local DistanceToCircleCenter = (Vector2.new(ScreenPosition.X, ScreenPosition.Y) - Circle.Position).Magnitude
                     
-                    input.Changed:Connect(function()
-                        if input.UserInputState == Enum.UserInputState.End then
-                            Dragging = false
+                    if OnScreen and not WallCheck(Child) then
+                        if Circle.Radius >= DistanceToCircleCenter then
+                            if Distance >= DistanceToCircleCenter then
+                                PlayerInCircle = DistanceToCircleCenter
+                                Distance = DistanceToCircleCenter
+                            end
                         end
-                    end)
-                end
-            end)
-            
-            topbarobject.InputChanged:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-                    DragInput = input
-                end
-            end)
-            
-            UserInputService.InputChanged:Connect(function(input)
-                if input == DragInput and Dragging then
-                    Update(input)
-                end
-            end)
-        end
-    end
-
-    Script.Functions.MakeDraggable(LockButton, LockButton)
-    Script.Functions.MakeDraggable(MacroButton, MacroButton)
-
-    Script.Functions.CheckAnti = function(Plr)
-        if not Plr or not Plr.Character or not Plr.Character:FindFirstChild("HumanoidRootPart") then return false end
-        local hrp = Plr.Character.HumanoidRootPart
-        if hrp.Velocity.Y < -70 then
-            return true
-        elseif hrp.Velocity.X > 450 or hrp.Velocity.X < -35 then
-            return true
-        elseif hrp.Velocity.Y > 60 then
-            return true
-        elseif hrp.Velocity.Z > 35 or hrp.Velocity.Z < -35 then
-            return true
-        end
-        return false
-    end
-
-    Script.Functions.CalculateVelocity = function(player)
-        if not player or not player.Character then return Vector3.new(0, 0, 0) end
-        local primary_part = player.Character:FindFirstChild(getgenv().Knives['Aimbot']['Target Part'])
-        if not primary_part then return Vector3.new(0, 0, 0) end
-        
-        if not PlayerData[player] then
-            PlayerData[player] = {
-                PreviousPosition = primary_part.Position,
-                Velocity = Vector3.new(0, 0, 0)
-            }
-        end
-        
-        local current_position = primary_part.Position
-        local previous_position = PlayerData[player].PreviousPosition
-        local displacement = current_position - previous_position
-        local delta_time = RunService.Heartbeat:Wait()
-        local velocity = displacement / delta_time
-        
-        PlayerData[player].Velocity = velocity
-        PlayerData[player].PreviousPosition = current_position
-        
-        return velocity
-    end
-
-    Script.Functions.GetPrediction = function(Plr)
-        if not Plr or not Plr.Character or not Client or not Client.Character then return 0.1 end
-        
-        if getgenv().Knives['Aimbot']['Prediction']['Auto Prediction'] then
-            local ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue()
-            local humanoidRootPart = Plr.Character:FindFirstChild("HumanoidRootPart")
-            local clientHumanoidRootPart = Client.Character:FindFirstChild("HumanoidRootPart")
-            
-            if humanoidRootPart and clientHumanoidRootPart then
-                local distance = (humanoidRootPart.Position - clientHumanoidRootPart.Position).Magnitude
-                return 0.1 + (ping / 2500 * 1.27) + (distance / 1000 * 0.01)
-            end
-        end
-        return getgenv().Knives['Aimbot']['Prediction']['Amount']
-    end
-
-    Script.Functions.GetEvent = function()
-        if not ReplicatedStorage then return nil end
-        local RemoteNames = {"MainEvent", "Bullets", "Remote", "MAINEVENT"}
-        for _, remote in pairs(ReplicatedStorage:GetDescendants()) do
-            if remote:IsA("RemoteEvent") and table.find(RemoteNames, remote.Name) then
-                return remote
-            end
-        end
-        return nil
-    end
-
-    Script.Functions.GetArguments = function()
-        return Arguments[game.PlaceId] or "UpdateMousePos"
-    end
-
-    Script.Functions.GetClosestPlrToCenter = function()
-        if not Camera then return nil end
-        local closestDist = math.huge
-        local closestPlr = nil
-        local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-        
-        for _, v in pairs(Players:GetPlayers()) do
-            if v ~= Client and v.Character and v.Character:FindFirstChild("Humanoid") and v.Character:FindFirstChild("HumanoidRootPart") and v.Character.Humanoid.Health > 0 then
-                local screenPos, onScreen = Camera:WorldToViewportPoint(v.Character.HumanoidRootPart.Position)
-                if onScreen then
-                    local distFromCenter = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
-                    if distFromCenter < closestDist then
-                        closestDist = distFromCenter
-                        closestPlr = v
                     end
                 end
             end
         end
-        return closestPlr
     end
-
-    Script.Functions.SetupConnections = function()
-        if not Client or not Client.Character then return end
-        Client.Character.ChildAdded:Connect(function(child)
-            if child and child:IsA("Tool") then
-                child.Activated:Connect(Script.Functions.OnToolActivated)
-            end
-        end)
-    end
-
-    Script.Functions.SetupConnections()
-    Client.CharacterAdded:Connect(Script.Functions.SetupConnections)
-
-    local Remote = Script.Functions.GetEvent()
-    local Argument = Script.Functions.GetArguments()
-
-    local Locking = false
-    local Macroing = false
-    local Plr = nil
-
-    Script.Functions.OnToolActivated = function()
-    if not Locking or not Plr or not Plr.Character then return end
-    local part = Plr.Character:FindFirstChild(getgenv().Knives['Aimbot']['Target Part'])
-    if not part then return end
-    
-    local Position = part.Position 
-    local prediction = Script.Functions.GetPrediction(Plr)
-    local velocity
-    
-    if not Script.Functions.CheckAnti(Plr) then
-        velocity = part.Velocity
-    else
-        velocity = Script.Functions.CalculateVelocity(Plr)
-    end
-    
-    local PredictedPosition = Position + (velocity * prediction)
-    
-    local humanoid = Plr.Character:FindFirstChild("Humanoid")
-    if humanoid and humanoid:GetState() == Enum.HumanoidStateType.Freefall then
-        PredictedPosition = PredictedPosition + Vector3.new(0, getgenv().Knives['Aimbot']['Jump Offset'], 0)
-    end
-
-    local mainEvent = game:GetService("ReplicatedStorage"):FindFirstChild("MainEvent")
-    if mainEvent then
-        local args = {
-            [1] = "UpdateMousePos",
-            [2] = PredictedPosition
-        }
-        mainEvent:FireServer(unpack(args))
-    end
-
-    local mainEventAlt = game:GetService("ReplicatedStorage"):FindFirstChild("MAINEVENT")
-    if mainEventAlt then
-        local args = {
-            [1] = "MOUSE", 
-            [2] = PredictedPosition
-        }
-        mainEventAlt:FireServer(unpack(args))
-    end
-    
-    local dh = game:GetService("ReplicatedStorage"):FindFirstChild("assets")
-    if dh and dh:FindFirstChild("dh") and dh.dh:FindFirstChild("MainEvent") then
-        local args = {
-            [1] = "UpdateMousePos",
-            [2] = {
-                [1] = PredictedPosition,
-                [2] = PredictedPosition
-            }
-        }
-        dh.dh.MainEvent:FireServer(unpack(args))
-    end
-
-    local lib = game:GetService("ReplicatedStorage"):FindFirstChild("Lib")
-    if lib and lib:FindFirstChild("Remote Events") and lib["Remote Events"]:FindFirstChild("MainEvent") then
-        local args = {
-            [1] = "UpdateMousePos",
-            [2] = {
-                ["MousePos"] = PredictedPosition,
-                ["Camera"] = PredictedPosition
-            }
-        }
-        lib["Remote Events"].MainEvent:FireServer(unpack(args))
-    end
-
-    local packages = game:GetService("ReplicatedStorage"):FindFirstChild("Packages")
-    if packages and packages:FindFirstChild("Knit") and packages.Knit:FindFirstChild("Services") and 
-       packages.Knit.Services:FindFirstChild("ToolService") and packages.Knit.Services.ToolService:FindFirstChild("RE") and
-       packages.Knit.Services.ToolService.RE:FindFirstChild("UpdateAim") then
-        local args = {
-            [1] = PredictedPosition
-        }
-        packages.Knit.Services.ToolService.RE.UpdateAim:FireServer(unpack(args))
-    end
-
-    local mainEvent = game:GetService("ReplicatedStorage"):FindFirstChild("MAINEVENT")
-    if mainEvent then
-        local args = {
-            [1] = "MOUSE",
-            [2] = PredictedPosition
-        }
-        mainEvent:FireServer(unpack(args))
-    end
-
-    local mainEventI2 = game:GetService("ReplicatedStorage"):FindFirstChild("MainEvent")
-    if mainEventI2 then
-        local args = {
-            [1] = "UpdateMousePosI2",
-            [2] = PredictedPosition
-        }
-        mainEventI2:FireServer(unpack(args))
-    elseif Remote and Remote:IsA("RemoteEvent") then
-        Remote:FireServer(Argument, PredictedPosition)
-    end
+    return PlayerInCircle
 end
 
-    LockButton.MouseButton1Click:Connect(function()
-        Locking = not Locking
-        if Locking then
-            LockButton.Image = "rbxasset://textures/ui/mouseLock_on@2x.png"
-            Plr = Script.Functions.GetClosestPlrToCenter()
-            if Plr and getgenv().Knives['Aimbot']['Notify'] then
-                notifications:Notify(string.format("Locked on %s", Plr.DisplayName))
-            end
-        else
-            LockButton.Image = "rbxasset://textures/ui/mouseLock_off@2x.png"
-            if Plr and getgenv().Knives['Aimbot']['Notify'] then
-                notifications:Notify("Stopped Locking")
-            end
-            Plr = nil
-        end
-    end)
+--// Activates Tool When A Player In Circle \\--
+RunService.Heartbeat:Connect(function()
+    local Triggerbot = getgenv().Obstruct.Triggerbot -- Ensure Triggerbot exists
 
-    MacroButton.MouseButton1Click:Connect(function()
-        Macroing = not Macroing
-        if Macroing then
-            MacroButton.ImageTransparency = 0
-        else
-            MacroButton.ImageTransparency = 0.5
-        end
-    end)
+    if Triggerbot and Triggerbot.Settings and Triggerbot.Settings.Enabled then
+        local TargetPlayer = GetPlayerInCircle()
+        local AimCursor = GetAimCursor()
 
-    RunService.Heartbeat:Connect(function()
-        if not Client or not Client.Character then return end
-        
-        if Macroing and Client.Character:FindFirstChild("HumanoidRootPart") and Camera then
-            local Look = Camera.CFrame.LookVector
-            local Macro = Client.Character.HumanoidRootPart
-            if Look and Macro then
-                Macro.CFrame = CFrame.new(Macro.Position, Macro.Position + Vector3.new(Look.X, 0, Look.Z))
-            end
+        if AimCursor then
+            Circle.Position = AimCursor.AbsolutePosition
+            Circle.Radius = ((AimCursor.AbsoluteSize.X + AimCursor.AbsoluteSize.Y) / 2) * 2.5
         end
 
-        if Locking and Plr and Plr.Character and getgenv().Knives['Aimbot']['Auto Air']['Enabled'] then
-    local humanoid = Plr.Character:FindFirstChild("Humanoid")
-    local equipped = Client.Character:FindFirstChildOfClass("Tool")
-    
-    if humanoid and equipped and humanoid:GetState() == Enum.HumanoidStateType.Freefall then
-        if getgenv().Knives['Aimbot']['Auto Air']['Delay']['Enabled'] then
-            Script.Functions.shoot = function()
-                if Locking and Plr and Plr.Character then
-                    equipped:Activate()
-                end
-            end
-            task.delay(getgenv().Knives['Aimbot']['Auto Air']['Delay']['Delay Amount'], Script.Functions.shoot)
-        else
-            equipped:Activate()
-        end
-    end
-end
-    end)
-
-    RunService.RenderStepped:Connect(function()
-        if not Locking or not Plr or not Plr.Character or not workspace.CurrentCamera then return end
-        
-        local targetPart = Plr.Character:FindFirstChild(getgenv().Knives['Aimbot']['Target Part'])
-        if not targetPart then return end
-         
-        local Position = targetPart.Position
-        local humanoid = Plr.Character:FindFirstChild("Humanoid")
-         
-        if humanoid and humanoid:GetState() == Enum.HumanoidStateType.Freefall then
-            Position = Position + Vector3.new(0, getgenv().Knives['Aimbot']['Jump Offset'], 0)
-        end
-         
-        local velocity
-        if not Script.Functions.CheckAnti(Plr) then
-            velocity = targetPart.Velocity
-        else
-            velocity = Script.Functions.CalculateVelocity(Plr)
-        end
-        
-        local prediction = Script.Functions.GetPrediction(Plr)
-        local targetPosition = Position + (velocity * prediction)
-        
-        workspace.CurrentCamera.CFrame = workspace.CurrentCamera.CFrame:Lerp(
-            CFrame.lookAt(
-                workspace.CurrentCamera.CFrame.Position,
-                targetPosition
-            ),
-            getgenv().Knives['Aimbot']['Camera']['Smoothing']
-        )
-    end)
-
-    if getgenv().Knives['Textures']['Enabled'] then
-        local Textures = getgenv().Knives['Textures']['Config']
-        
-        local mt = getrawmetatable(game)
-        local oldIndex = mt.__index
-        local oldNewIndex = mt.__newindex
-        setreadonly(mt, false)
-
-        mt.__index = newcclosure(function(self, key)
-            if Textures['Enabled'] then
-                if key == "Color" and self:IsA("BasePart") then
-                    if Textures['Ignore Players'] then
-                        local player = game.Players:GetPlayerFromCharacter(self.Parent)
-                        if player then return oldIndex(self, key) end
+        if TargetPlayer then
+            if (tick() - LastActivationTime) >= Triggerbot.Settings.Delay then
+                if LocalCharacter and LocalHumanoid and LocalRootPart then
+                    local Tool = LocalCharacter:FindFirstChildOfClass("Tool")
+                    if Tool and Tool:FindFirstChild("Handle") then
+                        Tool:Activate()
+                        task.wait(0.1)
+                        Tool:Deactivate()
                     end
-                    return Textures['Color']
-                elseif key == "Material" and self:IsA("BasePart") then
-                    if Textures['Ignore Players'] then
-                        local player = game.Players:GetPlayerFromCharacter(self.Parent)
-                        if player then return oldIndex(self, key) end
-                    end
-                    return Textures['Material']
                 end
+                LastActivationTime = tick()
             end
-            return oldIndex(self, key)
-        end)
-
-        mt.__newindex = newcclosure(function(self, key, value)
-            if Textures['Enabled'] and self:IsA("BasePart") then
-                if Textures['Ignore Players'] then
-                    local player = game.Players:GetPlayerFromCharacter(self.Parent)
-                    if player then return oldNewIndex(self, key, value) end
-                end
-                if key == "Color" then
-                    return oldNewIndex(self, key, Textures['Color'])
-                elseif key == "Material" then
-                    return oldNewIndex(self, key, Textures['Material'])
-                end
-            end
-            return oldNewIndex(self, key, value)
-        end)
-
-        for _, v in pairs(workspace:GetDescendants()) do
-    if v:IsA("BasePart") then
-        if Textures['Ignore Players'] then
-            local player = game.Players:GetPlayerFromCharacter(v.Parent) or game.Players:GetPlayerFromCharacter(v.Parent.Parent)
-            if not player then
-                v.Material = Textures['Material']
-                v.Color = Textures['Color']
-            end
-        else
-            v.Material = Textures['Material']
-            v.Color = Textures['Color']
-        end
-    elseif (v:IsA("Decal") or v:IsA("Texture")) then
-        local player = game.Players:GetPlayerFromCharacter(v.Parent) or game.Players:GetPlayerFromCharacter(v.Parent.Parent)
-        if not player and v.Parent.Name ~= "Head" then
-            v:Destroy()
-        end
-    end
-end
-
-workspace.DescendantAdded:Connect(function(v)
-    if (v:IsA("Decal") or v:IsA("Texture")) then
-        local player = game.Players:GetPlayerFromCharacter(v.Parent) or game.Players:GetPlayerFromCharacter(v.Parent.Parent)
-        if not player and v.Parent.Name ~= "Head" then
-            v:Destroy()
         end
     end
 end)
+
+if getgenv().Obstruct.Startup.Intro == true then
+    local function playIntro()
+        local introGui = Instance.new("ScreenGui")
+        local introFrame = Instance.new("Frame")
+        local introImage = Instance.new("ImageLabel")
+        local introSound = Instance.new("Sound")
+        local motionBlurEffect = Instance.new("BlurEffect")
+
+        introGui.Name = "IntroScreen"
+        introGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+        introFrame.Name = "IntroFrame"
+        introFrame.Parent = introGui
+        introFrame.Size = UDim2.new(1, 0, 1, 0)
+        introFrame.BackgroundTransparency = 1
+
+        introImage.Name = "IntroImage"
+        introImage.Parent = introFrame
+        introImage.Size = UDim2.new(0.4, 0, 0.4, 0)
+        introImage.Position = UDim2.new(0.3, 0, 0.3, 0)
+        introImage.Image = "rbxassetid://139063860556764"
+        introImage.BackgroundTransparency = 1
+        introImage.ImageTransparency = 1
+        introSound.Name = "IntroSound"
+        introSound.Parent = introFrame
+        introSound.SoundId = "rbxassetid://137918778422222"
+        introSound.Volume = 15
+        introSound:Play()
+
+        motionBlurEffect.Parent = game.Lighting
+        motionBlurEffect.Size = 24
+
+        introImage.ImageTransparency = 1
+
+        local tweenService = game:GetService("TweenService")
+        local tweenInfo = TweenInfo.new(2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, 0, false, 1)
+
+        local fadeInTween = tweenService:Create(introImage, tweenInfo, {ImageTransparency = 0.5})
+        local fadeOutTween = tweenService:Create(introImage, tweenInfo, {ImageTransparency = 1})
+
+        fadeInTween:Play()
+        fadeInTween.Completed:Wait()
+
+        wait(2)
+
+        fadeOutTween:Play()
+
+        local blurTweenInfo = TweenInfo.new(3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        local blurTween = tweenService:Create(motionBlurEffect, blurTweenInfo, {Size = 0})
+
+        blurTween:Play()
+        blurTween.Completed:Wait()
+
+        motionBlurEffect:Destroy()
+        fadeOutTween.Completed:Wait()
+
+        introGui:Destroy()
     end
 
-    getgenv().Knives.Loaded = true
+    playIntro()
 end
+
+local SkyboxAssets = {
+    Default = {"rbxassetid://591058823", "rbxassetid://591059876", "rbxassetid://591058104", "rbxassetid://591057861", "rbxassetid://591057625", "rbxassetid://591059642"},
+    Vaporwave = {"rbxassetid://1417494030", "rbxassetid://1417494146", "rbxassetid://1417494253", "rbxassetid://1417494402", "rbxassetid://1417494499", "rbxassetid://1417494643"},
+    Redshift = {"rbxassetid://401664839", "rbxassetid://401664862", "rbxassetid://401664960", "rbxassetid://401664881", "rbxassetid://401664901", "rbxassetid://401664936"},
+    Desert = {"rbxassetid://1013852", "rbxassetid://1013853", "rbxassetid://1013850", "rbxassetid://1013851", "rbxassetid://1013849", "rbxassetid://1013854"},
+    DaBaby = {"rbxassetid://7245418472", "rbxassetid://7245418472", "rbxassetid://7245418472", "rbxassetid://7245418472", "rbxassetid://7245418472", "rbxassetid://7245418472"},
+    Minecraft = {"rbxassetid://1876545003", "rbxassetid://1876544331", "rbxassetid://1876542941", "rbxassetid://1876543392", "rbxassetid://1876543764", "rbxassetid://1876544642"},
+    SpongeBob = {"rbxassetid://7633178166", "rbxassetid://7633178166", "rbxassetid://7633178166", "rbxassetid://7633178166", "rbxassetid://7633178166", "rbxassetid://7633178166"},
+    Skibidi = {"rbxassetid://14952256113", "rbxassetid://14952256113", "rbxassetid://14952256113", "rbxassetid://14952256113", "rbxassetid://14952256113", "rbxassetid://14952256113"},
+    Blaze = {"rbxassetid://150939022", "rbxassetid://150939038", "rbxassetid://150939047", "rbxassetid://150939056", "rbxassetid://150939063", "rbxassetid://150939082"},
+    ["Pussy Cat"] = {"rbxassetid://11154422902", "rbxassetid://11154422902", "rbxassetid://11154422902", "rbxassetid://11154422902", "rbxassetid://11154422902", "rbxassetid://11154422902"},
+    ["Among Us"] = {"rbxassetid://5752463190", "rbxassetid://5752463190", "rbxassetid://5752463190", "rbxassetid://5752463190", "rbxassetid://5752463190", "rbxassetid://5752463190"},
+    ["Space Wave"] = {"rbxassetid://16262356578", "rbxassetid://16262358026", "rbxassetid://16262360469", "rbxassetid://16262362003", "rbxassetid://16262363873", "rbxassetid://16262366016"},
+    ["Space Wave2"] = {"rbxassetid://1233158420", "rbxassetid://1233158838", "rbxassetid://1233157105", "rbxassetid://1233157640", "rbxassetid://1233157995", "rbxassetid://1233159158"},
+    ["Turquoise Wave"] = {"rbxassetid://47974894", "rbxassetid://47974690", "rbxassetid://47974821", "rbxassetid://47974776", "rbxassetid://47974859", "rbxassetid://47974909"},
+    ["Dark Night"] = {"rbxassetid://6285719338", "rbxassetid://6285721078", "rbxassetid://6285722964", "rbxassetid://6285724682", "rbxassetid://6285726335", "rbxassetid://6285730635"},
+    ["Bright Pink"] = {"rbxassetid://271042516", "rbxassetid://271077243", "rbxassetid://271042556", "rbxassetid://271042310", "rbxassetid://271042467", "rbxassetid://271077958"},
+    ["White Galaxy"] = {"rbxassetid://5540798456", "rbxassetid://5540799894", "rbxassetid://5540801779", "rbxassetid://5540801192", "rbxassetid://5540799108", "rbxassetid://5540800635"},
+}
+
+-- Ensure getgenv().Obstruct is initialized
+if not getgenv().Obstruct then
+    getgenv().Obstruct = {}
+end
+
+-- Ensure getgenv().Obstruct.Skybox is initialized
+if not getgenv().Obstruct.Skybox then
+    getgenv().Obstruct.Skybox = {}
+end
+
+-- Ensure the 'Enabled' property is initialized properly
+if getgenv().Obstruct.Skybox.Enabled == nil then
+    getgenv().Obstruct.Skybox.Enabled = false
+end
+
+-- Function to apply the skybox
+local function applySkybox()
+    local lighting = game:GetService("Lighting")
+
+    -- Check if skybox is enabled before applying
+    if getgenv().Obstruct.Skybox.Enabled == false then
+        print("Skybox is disabled in the settings.")
+        return
+    end
+
+    local selectedSkybox = getgenv().Obstruct.Skybox.SkyBoxTexture or "Default"  -- Fallback to "Default" if not set
+    local skyboxData = SkyboxAssets[selectedSkybox]
+
+    if not skyboxData then
+        warn("Invalid SkyBoxTexture name! Check spelling or use a valid skybox.")
+        return
+    end
+
+    -- Remove existing skybox
+    for _, child in pairs(lighting:GetChildren()) do
+        if child:IsA("Sky") then
+            child:Destroy()
+        end
+    end
+
+    -- Create new skybox
+    local newSky = Instance.new("Sky")
+    newSky.Name = "CustomSkybox"
+
+    -- Apply skybox textures safely
+    local faces = {"Bk", "Dn", "Ft", "Lf", "Rt", "Up"}
+    for i, face in ipairs(faces) do
+        local success, err = pcall(function()
+            newSky["Skybox" .. face] = skyboxData[i]
+        end)
+        if not success then
+            warn("Error applying skybox texture:", err)
+        end
+    end
+
+    newSky.Parent = lighting
+    print("Skybox successfully changed to:", selectedSkybox)
+end
+
+-- Apply the skybox with a short delay to ensure Lighting is ready
+task.wait(1)
+
+applySkybox()
+
+if getgenv().Obstruct.Textures.Enabled then
+    local Textures = getgenv().Obstruct.Textures.Config
+
+    local mt = getrawmetatable(game)
+    local oldIndex = mt.__index
+    local oldNewIndex = mt.__newindex
+    setreadonly(mt, false)
+
+    mt.__index = newcclosure(function(self, key)
+        if getgenv().Obstruct.Textures.Enabled then
+            if key == "Color" and self:IsA("BasePart") then
+                if Textures.Ignore_Players then
+                    local player = self.Parent and game.Players:GetPlayerFromCharacter(self.Parent)
+                    if player then return oldIndex(self, key) end
+                end
+                return Textures.Color
+            elseif key == "Material" and self:IsA("BasePart") then
+                if Textures.Ignore_Players then
+                    local player = self.Parent and game.Players:GetPlayerFromCharacter(self.Parent)
+                    if player then return oldIndex(self, key) end
+                end
+                return Textures.Material
+            end
+        end
+        return oldIndex(self, key)
+    end)
+
+    mt.__newindex = newcclosure(function(self, key, value)
+        if getgenv().Obstruct.Textures.Enabled and self:IsA("BasePart") then
+            if Textures.Ignore_Players then
+                local player = self.Parent and game.Players:GetPlayerFromCharacter(self.Parent)
+                if player then return oldNewIndex(self, key, value) end
+            end
+            if key == "Color" then
+                return oldNewIndex(self, key, Textures.Color)
+            elseif key == "Material" then
+                return oldNewIndex(self, key, Textures.Material)
+            end
+        end
+        return oldNewIndex(self, key, value)
+    end)
+
+    local function applyTextures(v)
+        if v:IsA("BasePart") then
+            if Textures.Ignore_Players then
+                local player = v.Parent and (game.Players:GetPlayerFromCharacter(v.Parent) or game.Players:GetPlayerFromCharacter(v.Parent.Parent))
+                if not player then
+                    v.Material = Textures.Material
+                    v.Color = Textures.Color
+                end
+            else
+                v.Material = Textures.Material
+                v.Color = Textures.Color
+            end
+        elseif (v:IsA("Decal") or v:IsA("Texture")) then
+            local player = v.Parent and (game.Players:GetPlayerFromCharacter(v.Parent) or game.Players:GetPlayerFromCharacter(v.Parent.Parent))
+            if not player and v.Parent and v.Parent.Name ~= "Head" then
+                v:Destroy()
+            end
+        end
+    end
+
+    for _, v in pairs(workspace:GetDescendants()) do
+        applyTextures(v)
+    end
+
+    workspace.DescendantAdded:Connect(applyTextures)
+end
+
+local LocalPlayer = game:GetService("Players").LocalPlayer
+
+local isMoving = false
+local speedMultiplier = getgenv().Obstruct.Cframe.Options.DefaultSpeed
+local enable = getgenv().Obstruct.Cframe.Options.Enabled
+
+local function moveCharacter(humanoidRootPart)
+    RunService.RenderStepped:Connect(function()
+        if not enable or not isMoving then return end
+        
+        local moveDirection = LocalPlayer.Character.Humanoid.MoveDirection
+        if moveDirection.Magnitude > 0 then
+            humanoidRootPart.AssemblyLinearVelocity = moveDirection * speedMultiplier
+        else
+            humanoidRootPart.AssemblyLinearVelocity = Vector3.zero -- Stop movement when no input is detected
+        end
+    end)
+end
+
+local function initializeCharacter(character)
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+    UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+        if gameProcessedEvent then return end
+
+        -- Toggle Movement Keybind
+        if input.KeyCode == Enum.KeyCode[getgenv().Obstruct.Cframe.Options.Keybinds.ToggleMovement:upper()] then
+            isMoving = not isMoving
+            if isMoving then
+                moveCharacter(humanoidRootPart)
+            else
+                humanoidRootPart.AssemblyLinearVelocity = Vector3.zero -- Stop movement when disabled
+            end
+        end
+    end)
+
+    RunService.RenderStepped:Connect(function()
+        speedMultiplier = getgenv().Obstruct.Cframe.Options.DefaultSpeed
+    end)
+end
+
+if LocalPlayer.Character then
+    initializeCharacter(LocalPlayer.Character)
+end
+
+LocalPlayer.CharacterAdded:Connect(function(character)
+    initializeCharacter(character)
+end)
+
+RunService.Heartbeat:Connect(function()
+    enable = getgenv().Obstruct.Cframe.Options.Enabled
+end)
+
+getgenv().Loaded = true
+
+-- // KeyBind Tool Logic 
+if getgenv().Obstruct.Misc.KeyTool and getgenv().Obstruct.Misc.KeyTool ~= "none" then
+    local keytoclick = "C"
+    local tool = Instance.new("Tool")
+    tool.RequiresHandle = false
+    tool.Name = getgenv().Obstruct.Misc.KeyTool
+    tool.Activated:Connect(
+        function()
+            local vim = game:service("VirtualInputManager")
+            vim:SendKeyEvent(true, keytoclick, false, game)
+        end
+    )
+    tool.Parent = game.Players.LocalPlayer.Backpack
+
+    game.StarterGui:SetCore(
+        "SendNotification",
+        {
+            Title = "C Tool Spawned",
+            Text = "MADE BY SOLICIT"
+        }
+    )
+
+    local player = game.Players.LocalPlayer
+
+    local function onCharacterAdded()
+        -- Ensure tool is parented to backpack on character respawn
+        tool.Parent = game.Players.LocalPlayer.Backpack
+    end
+
+    player.CharacterAdded:Connect(onCharacterAdded)
+
+    player.CharacterRemoving:Connect(
+        function()
+            -- Reattach the tool when character is removed
+            tool.Parent = game.Players.LocalPlayer.Backpack
+        end
+    )
+end
+
+-- // Macro System 
+UserInputService.InputBegan:Connect(function(Input, GameProcessedEvent)
+    if Input.KeyCode == getgenv().Obstruct.Macro.Keybind and not GameProcessedEvent then
+        if getgenv().Obstruct.Macro.Enabled then
+            getgenv().Obstruct.Macro.SpeedGlitch = not getgenv().Obstruct.Macro.SpeedGlitch
+            if getgenv().Obstruct.Macro.SpeedGlitch then
+                repeat
+                    RunService.Heartbeat:Wait()
+                    keypress(0x49) -- Adjust for intended key codes
+                    RunService.Heartbeat:Wait()
+                    keypress(0x4F)
+                    RunService.Heartbeat:Wait()
+                    keyrelease(0x49)
+                    RunService.Heartbeat:Wait()
+                    keyrelease(0x4F)
+                until not getgenv().Obstruct.Macro.SpeedGlitch
+            end
+        end
+    end
+end)
+
+-- // Spin Feature System (this is not gpt comment dumbass this is to remember the coding)
+if getgenv().Obstruct.Spin.Enabled then
+    local Toggle = getgenv().Obstruct.Spin.Enabled
+    local RotationSpeed = getgenv().Obstruct.Spin.SpinSpeed
+    local Keybind = getgenv().Obstruct.Spin.Keybind
+    local Camera = workspace.CurrentCamera
+
+    local function OnKeyPress(Input, GameProcessedEvent)
+        if Input.KeyCode == Keybind and not GameProcessedEvent then 
+            Toggle = not Toggle
+        end
+    end
+
+    UserInputService.InputBegan:Connect(OnKeyPress)
+
+    local LastRenderTime = 0
+    local TotalRotation = 0
+
+    local function RotateCamera()
+        if Toggle then
+            local CurrentTime = tick()
+            local TimeDelta = math.min(CurrentTime - LastRenderTime, 0.01)
+            LastRenderTime = CurrentTime
+
+            local RotationAngle = RotationSpeed * TimeDelta
+            local Rotation = CFrame.fromAxisAngle(Vector3.new(0, 1, 0), math.rad(RotationAngle))
+            Camera.CFrame = Camera.CFrame * Rotation
+
+            TotalRotation = TotalRotation + RotationAngle
+            if TotalRotation >= getgenv().Obstruct.Spin.Degrees then 
+                Toggle = false
+                TotalRotation = 0
+            end
+        end
+    end
+
+    RunService.RenderStepped:Connect(RotateCamera)
+end
+
+-- // Adonis Bypass
+for Key, Object in pairs(getgc(true)) do
+    if type(Object) == "table" then
+        setreadonly(Object, false)
+        local indexInstance = rawget(Object, "indexInstance")
+        if type(indexInstance) == "table" and indexInstance[1] == "kick" then
+            setreadonly(indexInstance, false)
+            rawset(Object, "Table", {"kick", function() coroutine.yield() end})
+            warn("\n---[ INFO ]---\nBypassed Adonis Anti-Cheat/Anti-Exploit.\nBypass Method: Preventing Script Table From Communicating With The Server.")
+            break
+        end
+    end
+end
+
+-- AntiGroundShot Logic 
+if getgenv().Obstruct.Safety.AntiGroundShots then
+local function checkGroundShots()
+if Target and Target.Character then
+local humanoidRootPart = Target.Character:FindFirstChild("HumanoidRootPart")
+if humanoidRootPart then
+local rayOrigin = humanoidRootPart.Position
+local rayDirection = Vector3.new(0, -3.5, 0)
+local ray = Ray.new(rayOrigin, rayDirection)
+local hitPart, hitPoint = workspace:FindPartOnRay(ray, Target.Character)
+
+if hitPart then  
+                return false  
+            end  
+        end  
+    end  
+    return true  
+end  
+  
+local oldUpdateAimbot = updateAimbot  
+updateAimbot = function()  
+    if checkGroundShots() then  
+        oldUpdateAimbot()  
+    end  
+end
+
+end
+
+local function IsKnocked(player)
+    if getgenv().Obstruct.Checks.Knocked and player and player.Character then
+        local targetKO = player.Character:FindFirstChild("BodyEffects") and player.Character.BodyEffects:FindFirstChild("K.O")
+        return targetKO and targetKO.Value
+    end
+    return false
+end
+
+local function HandleTargetDeath()
+    if Target and IsKnocked(Target) then
+        AimbotEnabled = false
+        Target = nil
+    end
+end
+
+local function GetNearestPoint(Part)
+    if not getgenv().Obstruct.SilentAim.NearestPoint or not Part then 
+        return Part.Position 
+    end
+    
+    local HitPosition = Mouse.Hit.Position
+    local Type = getgenv().Obstruct.SilentAim.NearestPointType
+    local PartCenter = Part.Position
+    local PartSize = Part.Size
+    local Half = PartSize / 2
+
+    if Type == "Generic" then
+        return Vector3.new(
+            math.clamp(HitPosition.X, PartCenter.X - Half.X, PartCenter.X + Half.X),
+            math.clamp(HitPosition.Y, PartCenter.Y - Half.Y, PartCenter.Y + Half.Y),
+            math.clamp(HitPosition.Z, PartCenter.Z - Half.Z, PartCenter.Z + Half.Z)
+        )
+    elseif Type == "Root" then
+        local LocalHit = Part.CFrame:PointToObjectSpace(HitPosition)
+        local ClampedPosition = Vector3.new(
+            math.clamp(LocalHit.X, -Half.X, Half.X),
+            math.clamp(LocalHit.Y, -Half.Y, Half.Y),
+            math.clamp(LocalHit.Z, -Half.Z, Half.Z)
+        )
+        return Part.CFrame:PointToWorldSpace(ClampedPosition)
+    elseif Type == "Full" then
+        local Transform = Part.CFrame:PointToObjectSpace(HitPosition)
+        local Quarter = PartSize * 0.25
+        return Part.CFrame * Vector3.new(
+            math.clamp(Transform.X, -Quarter.X, Quarter.X),
+            math.clamp(Transform.Y, -Quarter.Y, Quarter.Y),
+            math.clamp(Transform.Z, -Quarter.Z, Quarter.Z)
+        )
+    elseif Type == "Partial" then
+        local LocalPosition = Part.CFrame:PointToObjectSpace(HitPosition)
+        return Part.CFrame:PointToWorldSpace(Vector3.new(
+            math.clamp(LocalPosition.X, -Half.X, Half.X),
+            math.clamp(LocalPosition.Y, -Half.Y, Half.Y),
+            math.clamp(LocalPosition.Z, -Half.Z, Half.Z)
+        ))
+    elseif Type == "Scalar" then
+        local Transform = Part.CFrame:PointToObjectSpace(HitPosition)
+        return Part.CFrame * Vector3.new(
+            math.clamp(Transform.X, -Half.X, Half.X),
+            math.clamp(Transform.Y, -Half.Y, Half.Y),
+            math.clamp(Transform.Z, -Half.Z, Half.Z)
+        )
+    elseif Type == "Genesis" then
+        local LocalHit = Part.CFrame:PointToObjectSpace(HitPosition)
+        local Offset = Vector3.new(
+            math.sign(LocalHit.X) * Half.X,
+            math.sign(LocalHit.Y) * Half.Y,
+            math.sign(LocalHit.Z) * Half.Z
+        )
+        return Part.CFrame:PointToWorldSpace(Offset + Offset.Unit * 0.1)
+    end
+    
+    return Part.Position
+end
+
+
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+-- Silent Aim FOV Configuration
+getgenv().Obstruct = getgenv().Obstruct or {}
+getgenv().Obstruct.SilentAim = getgenv().Obstruct.SilentAim or {}
+getgenv().Obstruct.SilentAim.Fov = getgenv().Obstruct.SilentAim.Fov or {
+    Visible = true,
+    Radius = 150,
+    Thickness = 1,
+    Transparency = 0.5,
+    Color = Color3.fromRGB(255, 0, 0)
+}
+
+-- Create FOV Circle
+local FovCircle = Drawing.new("Circle")
+FovCircle.Filled = false
+FovCircle.NumSides = 64
+FovCircle.Radius = getgenv().Obstruct.SilentAim.Fov.Radius
+FovCircle.Thickness = getgenv().Obstruct.SilentAim.Fov.Thickness
+FovCircle.Transparency = 1 - getgenv().Obstruct.SilentAim.Fov.Transparency
+FovCircle.Color = getgenv().Obstruct.SilentAim.Fov.Color
+FovCircle.Visible = getgenv().Obstruct.SilentAim.Fov.Visible
+
+-- Function to update FOV properties
+local function UpdateFov()
+    FovCircle.Radius = getgenv().Obstruct.SilentAim.Fov.Radius
+    FovCircle.Color = getgenv().Obstruct.SilentAim.Fov.Color
+    FovCircle.Thickness = getgenv().Obstruct.SilentAim.Fov.Thickness
+    FovCircle.Transparency = 1 - getgenv().Obstruct.SilentAim.Fov.Transparency
+    FovCircle.Visible = getgenv().Obstruct.SilentAim.Fov.Visible
+end
+
+-- Update FOV position & properties dynamically
+RunService.RenderStepped:Connect(function()
+    if FovCircle.Visible then
+        FovCircle.Position = UserInputService:GetMouseLocation()
+        UpdateFov()
+    end
+end)
+
+-- Function to get closest target within FOV
+local function getTarget()
+    local closest, distance = nil, math.huge
+    local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
+            local hitPart = player.Character:FindFirstChild("HumanoidRootPart")
+            
+            if getgenv().Obstruct.SilentAim.NearestPoint then
+                local closestHit, closestDist = nil, math.huge
+                for _, part in ipairs(player.Character:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        local screenPoint, onScreen = Camera:WorldToViewportPoint(part.Position)
+                        if onScreen then
+                            local mag = (Vector2.new(screenPoint.X, screenPoint.Y) - center).Magnitude
+                            if mag < closestDist then
+                                closestHit = part
+                                closestDist = mag
+                            end
+                        end
+                    end
+                end
+                hitPart = closestHit or hitPart
+            end
+            
+            if hitPart then
+                local screenPoint, onScreen = Camera:WorldToViewportPoint(hitPart.Position)
+                if onScreen then
+                    local mag = (Vector2.new(screenPoint.X, screenPoint.Y) - center).Magnitude
+                    if mag < distance and mag < getgenv().Obstruct.SilentAim.Fov.Radius then
+                        closest = player
+                        distance = mag
+                    end
+                end
+            end
+        end
+    end
+    return closest
+end
+
+-- Update FOV Circle Every Frame
+RunService.RenderStepped:Connect(function()
+    local screenSize = Camera.ViewportSize
+    FovCircle.Position = Vector2.new(screenSize.X / 2, screenSize.Y / 2)
+end)
+
+-- Resolver Logic
+local StarterGui = game:GetService("StarterGui")
+
+-- Function to create notifications
+local function notify(message)
+    StarterGui:SetCore("SendNotification", {
+        Title = "Resolver Status",
+        Text = message
+    })
+end
+
+-- Resolver Logic with Keybind Toggle
+local velocityCache = {}
+local resolverEnabled = getgenv().Obstruct.Resolver.Enabled  -- Track Resolver state
+
+local function getVelocity(player)
+    if not resolverEnabled or not player or not player.Character then
+        return Vector3.zero
+    end
+
+    local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")  
+    if not humanoidRootPart then return Vector3.zero end  
+
+    local Type = getgenv().Obstruct.Resolver.Type  
+    local currentPosition = humanoidRootPart.Position  
+    local currentTime = tick()  
+
+    if not velocityCache[player] then  
+        velocityCache[player] = { lastPosition = currentPosition, lastTime = currentTime, velocity = Vector3.zero }  
+    end  
+
+    local cache = velocityCache[player]  
+
+    if Type == "Recalculate" then  
+        -- Simple velocity estimation  
+        local estimatedVelocity = (currentPosition - cache.lastPosition) / (currentTime - cache.lastTime)  
+        cache.velocity = estimatedVelocity  
+    elseif Type == "Delta" then  
+        -- Frame-based delta calculation  
+        local deltaTime = math.max(currentTime - cache.lastTime, 0.016) -- Prevent divide by zero  
+        cache.velocity = (currentPosition - cache.lastPosition) / deltaTime  
+    end  
+
+    cache.lastPosition = currentPosition  
+    cache.lastTime = currentTime  
+
+    return cache.velocity
+end
+
+-- Keybind for Resolver Toggle
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode[getgenv().Obstruct.Resolver.Keybind:upper()] then
+        resolverEnabled = not resolverEnabled
+        getgenv().Obstruct.Resolver.Enabled = resolverEnabled
+        
+        -- Show notification
+        notify(resolverEnabled and "Resolver Enabled" or "Resolver Disabled")
+    end
+end)
+
+local function updateAimbot()
+    if AimbotEnabled and Target and Target.Character then
+        local hitpart = Target.Character:FindFirstChild(getgenv().Obstruct.Aimbot.HitPart)
+        if hitpart then
+            local targetVelocity = getVelocity(Target) -- Resolver applied
+            local predictedPosition = hitpart.Position + (targetVelocity * getgenv().Obstruct.Aimbot.Prediction)
+
+            if Target.Character.Humanoid.Jump then
+                predictedPosition = predictedPosition + Vector3.new(0, getgenv().Obstruct.AimbotOffset.JumpOffset, 0)
+            elseif Target.Character.Humanoid.FloorMaterial == Enum.Material.Air then
+                predictedPosition = predictedPosition + Vector3.new(0, getgenv().Obstruct.AimbotOffset.FallOffset, 0)
+            end
+
+            local cameraPosition = Camera.CFrame.Position
+            local aimVector = (predictedPosition - cameraPosition).Unit
+            local aimCFrame = CFrame.new(cameraPosition, cameraPosition + aimVector)
+            Camera.CFrame = Camera.CFrame:Lerp(aimCFrame, getgenv().Obstruct.Aimbot.Smoothness)
+        end
+    end
+end
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode[getgenv().Obstruct.Keybinds.AimbotToggle:upper()] then
+        AimbotEnabled = not AimbotEnabled
+        Target = nil
+    end
+end)
+
+RunService.Heartbeat:Connect(function()
+    HandleTargetDeath()
+    if AimbotEnabled then
+        if not Target or not Target.Character or not Target.Character:FindFirstChild("Humanoid") or Target.Character.Humanoid.Health <= 0 then
+            Target = getTarget()
+        end
+    else
+        Target = nil
+    end
+    if getgenv().Obstruct.Aimbot.Enabled then
+        updateAimbot()
+    end
+end)
+
+OriginalIndex = hookmetamethod(game, "__index", newcclosure(function(Object, Key)
+    if getgenv().Obstruct.SilentAim.Enabled and Object:IsA("Mouse") and Key == "Hit" then
+        if getgenv().Obstruct.SilentAim.Type == "Fov" then
+            local fovTarget = getTarget() -- Find the closest player in FOV
+            if fovTarget and fovTarget.Character and not IsKnocked(fovTarget) then
+                local fovPart = fovTarget.Character:FindFirstChild(getgenv().Obstruct.SilentAim.HitPart)
+                if fovPart then
+                    return CFrame.new(fovPart.Position + (fovPart.Velocity * getgenv().Obstruct.SilentAim.Prediction))
+                end
+            end
+        elseif getgenv().Obstruct.SilentAim.Type == "Target" and Target and Target.Character then
+            if not IsKnocked(Target) then
+                local targetPart = Target.Character:FindFirstChild(getgenv().Obstruct.SilentAim.HitPart)
+                if targetPart then
+                    return CFrame.new(targetPart.Position)
+                end
+            end
+        end
+    end
+    return OriginalIndex(Object, Key)
+end))
+
+--// Services
+local Services = setmetatable({}, {
+    __index = function(_, Service)
+        return game:GetService(Service)
+    end
+})
+
+local Workspace = Services.Workspace
+local Players = Services.Players
+local ReplicatedStorage = Services.ReplicatedStorage
+local UserInputService = Services.UserInputService
+local RunService = Services.RunService
+
+--// Variables
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+local MainEvent = ReplicatedStorage:FindFirstChild("MainEvent")
+
+--// Configuration Table
+getgenv().Obstruct = getgenv().Obstruct or {}
+getgenv().Obstruct.Safety = getgenv().Obstruct.Safety or {
+    AntiGroundShots = true,
+    AntiAimViewer = true, -- Toggle Anti-Aim Viewer
+}
+
+--// Function to Check if Player is Alive
+local function IsPlayerAlive(Player)
+    return Player and Player.Character and Player.Character:FindFirstChild("Humanoid") and Player.Character:FindFirstChild("Head")
+end
+
+--// Function to Generate Random Offset
+local function RandomOffset(Value)
+    return type(Value) == "number" and math.random(-Value, Value) or 0
+end
+
+--// Anti-Aim Viewer Hook
+local OldNamecall
+OldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+    local Args = {...}
+    local Method = getnamecallmethod()
+
+    if not checkcaller() and getgenv().Obstruct.Safety.AntiAimViewer and Method == "FireServer" and self == MainEvent and Args[1] == "UpdateMousePos" then
+        if IsPlayerAlive(LocalPlayer) then
+            Args[2] = LocalPlayer.Character.Head.Position + Vector3.new(RandomOffset(50), RandomOffset(50), RandomOffset(50))
+        end
+        return self.FireServer(self, unpack(Args))
+    end
+
+    return OldNamecall(self, ...)
+end)
+
+--// Character Respawn Handling
+LocalPlayer.CharacterAdded:Connect(function(Character)
+    if getgenv().Obstruct.Safety.AntiAimViewer then
+        task.wait(1)
+        Character:FindFirstChildOfClass("Humanoid"):UnequipTools()
+    end
+end)
