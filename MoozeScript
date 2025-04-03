@@ -22,7 +22,7 @@ getgenv().Knives = {
         ['Enabled'] = true
     },
     ['Textures'] = {
-        ['Enabled'] = false,
+        ['Enabled'] = true,
         ['Config'] = {
             ['Color'] = Color3.fromRGB(50,50,50),
             ['Material'] = Enum.Material.Sand,
@@ -117,8 +117,8 @@ if (not getgenv().Knives.Loaded) then
     MacroButton.BackgroundTransparency = 1.000
     MacroButton.Position = UDim2.new(0.85, 0, 0.75, 0)
     MacroButton.Size = UDim2.new(0, 90, 0, 90)
-    MacroButton.Image = "rbxassetid://126653225404074"
-    MacroButton.Visible = getgenv().Mooze['Macro']['Enabled']
+    MacroButton.Image = "rbxassetid://113276332333710"
+    MacroButton.Visible = getgenv().Knives['Macro']['Enabled']
 
     Script.Functions.MakeDraggable = function(topbarobject, object)
         local Dragging = nil
@@ -182,7 +182,7 @@ if (not getgenv().Knives.Loaded) then
 
     Script.Functions.CalculateVelocity = function(player)
         if not player or not player.Character then return Vector3.new(0, 0, 0) end
-        local primary_part = player.Character:FindFirstChild(getgenv().Mooze['Aimbot']['Target Part'])
+        local primary_part = player.Character:FindFirstChild(getgenv().Knives['Aimbot']['Target Part'])
         if not primary_part then return Vector3.new(0, 0, 0) end
         
         if not PlayerData[player] then
@@ -207,7 +207,7 @@ if (not getgenv().Knives.Loaded) then
     Script.Functions.GetPrediction = function(Plr)
         if not Plr or not Plr.Character or not Client or not Client.Character then return 0.1 end
         
-        if getgenv().Mooze['Aimbot']['Prediction']['Auto Prediction'] then
+        if getgenv().Knives['Aimbot']['Prediction']['Auto Prediction'] then
             local ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue()
             local humanoidRootPart = Plr.Character:FindFirstChild("HumanoidRootPart")
             local clientHumanoidRootPart = Client.Character:FindFirstChild("HumanoidRootPart")
@@ -217,7 +217,7 @@ if (not getgenv().Knives.Loaded) then
                 return 0.1 + (ping / 2500 * 1.27) + (distance / 1000 * 0.01)
             end
         end
-        return getgenv().Mooze['Aimbot']['Prediction']['Amount']
+        return getgenv().Knives['Aimbot']['Prediction']['Amount']
     end
 
     Script.Functions.GetEvent = function()
