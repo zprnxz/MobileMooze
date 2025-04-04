@@ -8,6 +8,9 @@ getgenv().Obstruct = {
         Prediction = 0.146274,
         Smoothness = 0.828,
     },
+    Tools = {
+        Enabled = false,
+    },
     AimbotOffset = {
         JumpOffset = 12,
         FallOffset = 4,
@@ -100,6 +103,40 @@ local Mouse = LocalPlayer:GetMouse()
 -- // Aimbots Variable
 local Target = nil
 local AimbotEnabled = false
+
+-- // Tools Variable
+--credits to thatsnotmatt#2602
+getgenv().keytoclick = "Q"
+tool = Instance.new("Tool")
+tool.RequiresHandle = false
+tool.Name = keytoclick
+tool.Activated:connect(function()
+    local vim = game:service("VirtualInputManager")
+vim:SendKeyEvent(true, keytoclick, false, game)
+end)
+tool.Parent = game.Players.LocalPlayer.Backpack
+wait(0.2)
+local AkaliNotif = loadstring(game:HttpGet("https://raw.githubusercontent.com/Kinlei/Dynissimo/main/Scripts/AkaliNotif.lua"))();
+local Notify = AkaliNotif.Notify;
+Notify({
+Description = "thatsnotmatt#2602";
+Title = "zzz#0001";
+Duration = 10;
+});
+mouse = game.Players.LocalPlayer:GetMouse()
+
+
+
+tool = Instance.new("Tool")
+tool.RequiresHandle = false
+tool.Name = "teleport"
+tool.Activated:connect(function()
+local pos = mouse.Hit+Vector3.new(0,2.5,0)
+pos = CFrame.new(pos.X,pos.Y,pos.Z)
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = pos
+end)
+tool.Parent = game.Players.LocalPlayer.Backpack
+
 
 -- // TargerSwitch Variable
 local LastSwitchTime = 0
